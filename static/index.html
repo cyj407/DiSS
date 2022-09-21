@@ -1,0 +1,558 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <link rel="stylesheet" href="styles.css"> -->
+    <title>Drawing app</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+</head>
+<body>
+    <section class="container">
+        <div id="toolbar">
+            
+            <!-- <label for="stroke">Stroke</label> -->
+            <label for="lineWidth" style="background-color: transparent;">Stroke Width
+                <input type="range" class="slider" id="lineWidth" name='lineWidth' min="1" max="30" step="1" value="5">   
+                <!-- <input id="lineWidth" name='lineWidth' type="number" value="5"> -->
+            </label>
+            <input id="stroke" name='stroke' type="color">
+            
+            <button id="clear">Clear</button>
+            <button id="undo">Undo</button>
+            <!-- <button id="undo" style="background-color: gray;" disabled>Undo</button> -->
+            
+            <label class="upload" style="margin-left: 5em; text-align: center">Upload
+                <input type="file" id="upload" style="display:None;" onchange="upload_image(this)" accept="image/png, image/jpg"/>
+            </button>
+        </div>
+
+        
+
+        <div class="slidecontainer">
+            <p>Sketch scale <input type="range" class="slider" id="sk-scale" min="0.0" max="3.0" step="0.01" value="1.0"></p>   
+            <p>Stroke scale <input type="range" class="slider" id="st-scale" min="0.0" max="3.0" step="0.01" value="1.0"></p> 
+            <p>Realism scale <input type="range" class="slider" id="re-scale" min="0.0" max="1.0" step="0.01" value="1.0"></p> 
+        </div>
+
+        <!-- <div>
+        S2I/Local Editing
+        <label class="switch">
+            <input type="checkbox" id="edit-mode">
+            <span class="slider-orange round"></span>
+        </label>
+        Region-aware S2I
+        </div> -->
+        <div>
+        <label class="custom-select">
+            <!-- Select from number options -->
+            Mode
+            <select id="mode-select">
+              <option value="1">S2I Generation</option>
+              <option value="2">Multi-conditioned Local Editing</option>
+              <option value="3">Region-sensitive Stroke-to-image</option>
+            </select>
+        </label>
+        </div>
+
+        <canvas id="drawing-board"></canvas>    
+
+        <div class="panel">
+            <button id="generate" style="width:15em; vertical-align: top;" onclick="send_and_gen()">Generate</button>
+        </div>
+
+        <!-- <img id="input-sketch" style= "visibility:hidden;"/> -->
+        <!-- <img id="input-stroke" style= "visibility:hidden;"/> -->
+        <img id="gen-image" style= "visibility:hidden;"/>
+        
+    </section>
+    <!-- <script src="./index.js"></script> -->
+
+    <style>
+        body {
+            font-family: system-ui;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            /* overflow: hidden; */
+            /* color: white; */
+        }
+
+        h1 {
+            background: #7F7FD5;
+            background: -webkit-linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);
+            background: linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .switch {
+            margin-bottom: -10px;
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {display:none;}
+
+        .slider-orange {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #F3CBAC;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider-orange:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider-orange {
+            background-color: #E56E3D;
+        }
+
+        input:focus + .slider-orange {
+            box-shadow: 0 0 1px #E56E3D;
+        }
+
+        input:checked + .slider-orange:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        .slider-orange.round {
+            border-radius: 34px;
+        }
+
+        .slider-orange.round:before {
+            border-radius: 50%;
+        }
+
+
+        #slidecontainer {
+            /* display: flex; */
+            float: right;
+            text-align: center;
+            /* color: #1565c0; */
+            width: 100%;
+        }
+
+        #generate {
+            height: auto;
+            /* margin-top: 7px;
+            margin-left: 5px;
+            margin-right: 5px; */
+        }
+
+
+        
+        .slider {
+            -webkit-appearance: none;
+            height: 10px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.8;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 20px;
+            background: #E56E3D;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 10px;
+            height: 20px;
+            background: #E56E3D;
+            cursor: pointer;
+        }
+
+        .upload {
+            background-color: #F72001;
+            border: none;
+            border-radius: 4px;
+            color:white;
+            height: 60px;
+            width: 80px;
+            padding: 0.7em;
+        }
+        
+        #lineWidth {
+            cursor: pointer;
+            /* color:white; */
+            padding: 0px;
+            width: 8em;
+        }
+        
+        #gen-image {
+            padding: 5px;
+        }
+
+        #drawing-board {
+            margin: 15px;
+            border-style: solid;
+            border-color: black; /* #E56E3D; */
+        }
+
+        #toolbar {    
+            /* vertical-align: middle;    */
+            text-align: center;
+            /* display: flex; */
+            /* flex-direction: column; */
+            padding: 20px;
+            /* width: 100%; */
+            background-color: #F8EEE6;
+        }
+
+        #toolbar * {
+            margin-bottom: 6px;
+        }
+
+        #toolbar label {
+            font-size: 12px;
+        }
+
+        #toolbar button {
+            background-color: #F2A268;
+            border: none;
+            border-radius: 4px;
+            color:white;
+            height: 30px;
+            width: 50px;
+            padding: 2px;
+        }
+
+        .custom-select {
+        position: relative;
+        display: inline-block;
+        /* font-size: 14px; */
+        /* color: #888; */
+        margin-top: 5px;
+        }
+
+        .custom-select select {
+        display: block;
+        width: 300px;
+        min-height: 35px;
+        background: #F3CBAC;
+        border-radius: 3px;
+        border: 2px solid #E56E3D;
+        outline: none;
+        padding: 0 20px 0 10px;
+        margin-top: 5px;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        -ms-appearance: none;
+        }
+
+        .custom-select::after {
+        content: '';
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent;
+        border-top-color: #222;
+        display: inline-block;
+        border-radius: 2px;
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        }
+
+        .custom-select .selector-options {
+        list-style: none;
+        padding: 5px 0;
+        margin: 0;
+        background: #F3CBAC;
+        /* color: #fff; */
+        border-radius: 4px;
+        z-index: 1;
+        width: 96%;
+        position: absolute;
+        left: 2%;
+        top: 35%;
+        }
+
+        .custom-select .selector-options li {
+        height: 35px;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        }
+
+        .custom-select .selector-options li:hover {
+        background: #F2A268;
+        }
+
+    </style>
+    <script>
+        const canvas = document.getElementById('drawing-board');
+        const toolbar = document.getElementById('toolbar');
+        const ctx = canvas.getContext('2d');
+        const gen_img = document.getElementById('gen-image');
+        const input_sketch = document.getElementById('input-sketch');
+        const input_stroke = document.getElementById('input-stroke');
+        const btn_gen = document.getElementById('generate');
+        const sk_scale = document.getElementById('sk-scale');
+        const st_scale = document.getElementById('st-scale');
+        const re_scale = document.getElementById('re-scale');
+        const edit_mode = document.getElementById('mode-select');//('edit-mode');
+
+        const canvasOffsetX = canvas.offsetLeft;
+        const canvasOffsetY = canvas.offsetTop;
+
+        canvas.width = 256;//window.innerWidth - canvasOffsetX;
+        canvas.height = 256;//window.innerHeight - canvasOffsetY;
+        gen_img.style.width = canvas.width;
+        gen_img.style.height = canvas.height;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let cur_steps = [];
+        let isPainting = false;
+        // let lineWidth = 5;
+        let startX;
+        let startY;
+        let clickOnce = false;
+
+
+        toolbar.addEventListener('click', e => {
+            if (e.target.id === 'clear') {
+                // ctx.clearRect(0, 0, canvas.width, canvas.height);
+                cur_steps.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            if (e.target.id === 'undo') {
+                console.log(cur_steps.length);
+                // ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (cur_steps.length > 0) {
+                    let cur = cur_steps.pop();
+                    ctx.putImageData(cur, 0, 0);
+                }
+            }
+        });
+
+        toolbar.addEventListener('change', e => {
+            if(e.target.id === 'stroke') {
+                ctx.strokeStyle = e.target.value;
+            }
+
+            if(e.target.id === 'lineWidth') {
+                lineWidth = e.target.value;
+            }
+            
+        });
+
+        const draw = (e) => {
+            if(!isPainting) {
+                return;
+            }
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+
+            rect = canvas.getBoundingClientRect();
+            // ctx.lineTo(e.clientX - canvasOffsetX, e.clientY - canvasOffsetY);
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            cur_steps.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            isPainting = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            isPainting = false;
+            ctx.stroke();
+            ctx.beginPath();
+        });
+
+        canvas.addEventListener('mousemove', draw);
+
+        
+        // Get the position of a touch relative to the canvas
+        function getTouchPos(canvasDom, touchEvent) {
+            var rect = canvasDom.getBoundingClientRect();
+            return {
+                x: touchEvent.touches[0].clientX - rect.left,
+                y: touchEvent.touches[0].clientY - rect.top
+            };
+        }
+
+        // Set up touch events for mobile, etc
+        canvas.addEventListener("touchstart", function (e) {
+            mousePos = getTouchPos(canvas, e);
+            var touch = e.touches[0];
+            var mouseEvent = new MouseEvent("mousedown", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+            }, false);
+        
+        canvas.addEventListener("touchend", function (e) {
+            var mouseEvent = new MouseEvent("mouseup", {});
+            canvas.dispatchEvent(mouseEvent);
+        }, false);
+
+        canvas.addEventListener("touchmove", function (e) {
+            e.preventDefault();
+            var touch = e.touches[0];
+            var mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, false);
+
+
+        function upload_image(file_obj) {
+            console.log('upload');
+            // clean canvas first        
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            let file = file_obj.files[0];
+            if (file) {
+                upload_img = new Image();
+                upload_img.src = URL.createObjectURL(file);
+                upload_img.onload = function(){
+                    width = this.width;
+                    height = this.height;
+                    if (height != canvas.height) {
+                        width *= canvas.height / height;
+                        height = canvas.height;
+                    }
+                    else if (width != canvas.width) {
+                        height *= canvas.width / width;
+                        width = canvas.width;
+                    }
+                    ctx.drawImage(upload_img, 0, 0, width, height);            
+                    ctx.save();
+                }
+            }
+
+        }
+
+
+        function send_and_gen() {
+
+            console.log('click');
+            btn_gen.innerText = "Processing...";
+            btn_gen.disabled = true;
+            gen_img.src = 'Spinner-1s-200px.gif';
+            gen_img.style.visibility = "visible";
+
+            let dataURL = canvas.toDataURL(); // png
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:5000/generate",
+                data:{
+                    imageBase64: dataURL,
+                    realism: re_scale.value,
+                    sketch: sk_scale.value,
+                    stroke: st_scale.value,
+                    mode: edit_mode.value
+                    // mode: edit_mode.checked
+                },
+            })
+            .done(function(e) { // get the generation result from server
+                gen_img.src = 'data:;base64,' + e['image'];
+                console.log(e);
+                btn_gen.innerText = "Generate";
+                btn_gen.disabled = false;
+            })
+        }
+
+        /* Video Explanatio - https://youtu.be/-0VuZEYIYuI */
+        document.querySelectorAll('.custom-select').forEach(setupSelector);
+
+        function setupSelector(selector) {
+            selector.addEventListener('change', e => {
+                console.log('changed', e.target.value)
+            })
+
+            selector.addEventListener('mousedown', e => {
+                if(window.innerWidth >= 420) {// override look for non mobile
+                e.preventDefault();
+
+                const select = selector.children[0];
+                const dropDown = document.createElement('ul');
+                dropDown.className = "selector-options";
+
+                [...select.children].forEach(option => {
+                    const dropDownOption = document.createElement('li');
+                    dropDownOption.textContent = option.textContent;
+
+                    dropDownOption.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    select.value = option.value;
+                    selector.value = option.value;
+                    select.dispatchEvent(new Event('change'));
+                    selector.dispatchEvent(new Event('change'));
+                    dropDown.remove();
+
+                    });
+
+                    dropDown.appendChild(dropDownOption);   
+                });
+
+                selector.appendChild(dropDown);
+
+                // handle click out
+                document.addEventListener('click', (e) => {
+                    if(!selector.contains(e.target)) {
+                    dropDown.remove();
+                    }
+                });
+                }
+        });
+        }
+        // function resize() {
+        //     if ( $(window).width() < 700) {
+        //         let _container = document.getElementsByClassName('slidecontainer')[0];
+        //         _container.width = 20;
+        //     }
+        //     else {
+
+        //     }
+        // }
+        // $(window).on("resize", resize);
+        // resize(); // call once initially
+
+    </script>
+</body>
+</html>
