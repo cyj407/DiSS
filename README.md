@@ -46,7 +46,7 @@ python app.py
 - The corresponding output image will be computed for about 55 seconds.
 ## Test
 #### Using the pre-trained models
-- Download the [pre-trained diffusion models](https://drive.google.com/file/d/14HMY1kvImNYnFiNDBuRF3BwT2MZ_20ld/view?usp=sharing), here we provide the pre-trained diffusion model for the AFHQ-cat, Flowers, LHQ and AFHQ(cats, dogs, and wildlife) dataset.
+- Download the [pre-trained diffusion models](https://mega.nz/file/EakHmYSC#Kz6b36NkWLgIG-kKVTSt8jRg228or3FtVpr_cqO1szM), here we provide the pre-trained diffusion model for the AFHQ-cat, Flowers, LHQ and AFHQ(cats, dogs, and wildlife) dataset.
 - Unzip the downloaded file, and save all the model under the path `./checkpoints/`.
 ### Adaptively Sketch-to-Image Generation
 - Flowers
