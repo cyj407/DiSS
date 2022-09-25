@@ -107,7 +107,7 @@ def load_data_sketchstroke(
     all_sketch_files = sorted(_list_image_files_recursively(sketch_dir))
     
     # stroke
-    stroke_dir = data_dir[:-1] + '_stroke_30to60/'
+    stroke_dir = data_dir[:-1] + '_stroke/'
     # stroke_dir = "/eva_data1/Mavis/gd_sketch_stroke/test_stroke"
     all_stroke_files = sorted(_list_image_files_recursively(stroke_dir))
     

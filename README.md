@@ -45,6 +45,25 @@ python app.py
 ```
 - The corresponding output image will be computed for about 55 seconds.
 ## Train
+#### Preparing sketch and stroke data
+- We utilize [Photo-Sketching: Inferring Contour Drawings from Images](https://github.com/mtli/PhotoSketch) for sketach generation and [Stylized Neural Painting](https://github.com/jiupinjia/stylized-neural-painting), [Paint Transformer: Feed Forward Neural Painting with Stroke Prediction](https://github.com/Huage001/PaintTransformer) for stroke generation, please refer to our paper for details. 
+- Please organize the whole dataset as follow:
+```
+Root Dir/
+  -<dataset_path>/
+    -Image1
+    -Image2
+    -...
+  -"<dataset_path>_sketch"/
+    -Image1
+    -Image2
+    -...
+  -"<dataset_path>_stroke"/
+    -Image1
+    -Image2
+    -...
+```
+#### Training your own models
 - We use the following hyperparameters among the three datasets in our paper, you can design your own ones.
 ```
 MODEL_FLAGS="--attention_resolutions 32,16,8 --image_size 512 --num_channels 128 --num_res_blocks 3 --use_scale_shift_norm True"
