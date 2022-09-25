@@ -39,11 +39,26 @@ conda env create -f diss_env.yaml
 ## User-Friendly Interface
 <img src='fig/demo.gif' width="800px">
 
-- To draw a sketch/stroke images on the interface or upload a reference input image, run the following command and access [http://127.0.0.1:5000](http://127.0.0.1:5000). First loading would spend more time.
+- To draw a sketch/stroke images on the interface or upload a reference input image, run the following command and access [http://127.0.0.1:5000](http://127.0.0.1:5000). First loading would need more time.
 ```
 python app.py
 ```
 - The corresponding output image will be computed for about 55 seconds.
+## Train
+- We use the following hyperparameters among the three datasets in our paper, you can design your own ones.
+```
+MODEL_FLAGS="--attention_resolutions 32,16,8 --image_size 512 --num_channels 128 --num_res_blocks 3 --use_scale_shift_norm True"
+DIFFUSION_FLAGS="--diffusion_steps 1000 --noise_schedule linear" 
+TRAIN_FLAGS="--lr 1e-4 --batch_size 2"
+```
+- Train your own sketch and stroke conditioned diffusion models with desired data stored in <dataset_path>.
+```
+python train.py --data_dir <dataset_path> --path <path_for_saving_the_models> $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS 
+```
+- Finetune the trained models (stored at <pretrained_model_path>) for sketch and stroke classifier-free guidance (randomly replacing 30% of each condition with an image filled with gray pixels).
+```
+python finetune.py --data_dir <dataset_path> --path <path_for_saving_the_models> --trained_model <pretrained_model_path> $MODEL_FLAGS $DIFFUSION_FLAGS $TRAIN_FLAGS 
+```
 ## Test
 #### Using the pre-trained models
 - Download the [pre-trained diffusion models](https://mega.nz/file/EakHmYSC#Kz6b36NkWLgIG-kKVTSt8jRg228or3FtVpr_cqO1szM), here we provide the pre-trained diffusion model for the AFHQ-cat, Flowers, LHQ and AFHQ(cats, dogs, and wildlife) dataset.
