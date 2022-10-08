@@ -130,7 +130,7 @@ def load_data_sketchstroke(
         random_crop=random_crop,
         random_flip=random_flip,
     )
-    return dataset
+    #return dataset
     if deterministic:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True

@@ -155,8 +155,9 @@ class TrainLoop:
             not self.lr_anneal_steps
             or self.step + self.resume_step < self.lr_anneal_steps
         ):
-            batch, cond = next(self.data)
-            self.run_step(batch, cond)
+            # sketch-image pair
+            batch_image, batch_sketch, batch_stroke, cond = next(self.data)
+            self.run_step(batch_image, batch_sketch, batch_stroke, cond)
             if self.step % self.log_interval == 0:
                 logger.dumpkvs()
             if self.step % self.save_interval == 0:
@@ -169,29 +170,33 @@ class TrainLoop:
         if (self.step - 1) % self.save_interval != 0:
             self.save()
 
-    def run_step(self, batch, cond):
-        self.forward_backward(batch, cond)
+    def run_step(self, batch_image, batch_sketch, batch_stroke, cond):
+        self.forward_backward(batch_image, batch_sketch, batch_stroke, cond)
         took_step = self.mp_trainer.optimize(self.opt)
         if took_step:
             self._update_ema()
         self._anneal_lr()
         self.log_step()
 
-    def forward_backward(self, batch, cond):
+    def forward_backward(self, batch_image, batch_sketch, batch_stroke, cond):
         self.mp_trainer.zero_grad()
-        for i in range(0, batch.shape[0], self.microbatch):
-            micro = batch[i : i + self.microbatch].to(dist_util.dev())
+        for i in range(0, batch_image.shape[0], self.microbatch):
+            micro_image = batch_image[i : i + self.microbatch].to(dist_util.dev())
+            micro_sketch = batch_sketch[i : i + self.microbatch].to(dist_util.dev())
+            micro_stroke = batch_stroke[i : i + self.microbatch].to(dist_util.dev())
             micro_cond = {
                 k: v[i : i + self.microbatch].to(dist_util.dev())
                 for k, v in cond.items()
             }
-            last_batch = (i + self.microbatch) >= batch.shape[0]
-            t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
+            last_batch = (i + self.microbatch) >= batch_image.shape[0]
+            t, weights = self.schedule_sampler.sample(micro_image.shape[0], dist_util.dev())
 
             compute_losses = functools.partial(
                 self.diffusion.training_losses,
                 self.ddp_model,
-                micro,
+                micro_image,
+                micro_sketch,
+                micro_stroke,
                 t,
                 model_kwargs=micro_cond,
             )
