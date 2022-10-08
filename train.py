@@ -6,7 +6,7 @@ import argparse
 import os
 import torch
 
-from guided_diffusion import dist_util, logger
+from guided_diffusion.guided_diffusion import dist_util, logger
 from guided_diffusion.guided_diffusion.image_datasets import load_data_sketchstroke
 from guided_diffusion.guided_diffusion.resample import create_named_schedule_sampler
 from guided_diffusion.guided_diffusion.script_util import (
